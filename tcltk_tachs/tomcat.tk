@@ -1,29 +1,42 @@
+
 #!/usr/bin/wish
 
 set tomcatctl "/etc/init.d/tomcat"
-global tomcatctl
-
-proc start {} {
-  global tomcatctl
-  exec $tomcatctl start & 
-}
-
-proc stop {} {
-  global tomcatctl
-  exec $tomcatctl stop &
-}
-
-proc restart {} {
-  global tomcatctl
-  exec $tomcatctl restart &
-}
 
 proc screen {} {
   frame .top -borderwidth 10
-  pack .top -fill x	
-  button .top.start -text "Start" -command start
-  button .top.stop -text "Stop" -command stop
-  button .top.restart -text "Restart" -command restart
-  pack .top.start .top.stop .top.restart -side left -padx 0p -pady 0
+  pack .top -fill x
+  radiobutton .top.start -text "Start" -variable mode -value start
+  radiobutton .top.stop  -text "Stop" -variable mode -value stop
+  radiobutton .top.restart -text "Restart" -variable mode -value restart
+  button .top.submit -text Execute -command init 
+  button .top.exit -text Exit -command exit
+  pack .top.start .top.stop .top.restart .top.submit -side left -padx 2p -pady 0 -anchor n
+  pack .top.exit -side right -padx 0p -pady 0 -anchor n
+  frame .bottom
+  pack .bottom -fill x
+  text .bottom.main -relief sunken -bd 2 -yscrollcommand ".bottom.scroll set"
+  scrollbar .bottom.scroll -command ".bottom.main yview"
+  pack .bottom.main -side left -fill y
+  pack .bottom.scroll -side right -fill y
+}
+
+proc init { } {
+ global mode action
+ switch $mode {
+    stop     {set action "stop"}
+    restart  {set action "restart"}
+    default  {set action "start"}
+  }
+  put_text
+}
+
+proc put_text {} {
+  global action tomcatctl
+  set f [ open "| $tomcatctl $action" r]
+  while {[gets $f x] >= 0} {
+    .bottom.main insert 1.0 "$x\n"
+  }
+  catch {close $f}
 }
 screen
