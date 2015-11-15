@@ -1,0 +1,446 @@
+#! /usr/bin/wish 
+
+## Source the tcl file, if exists, Quit otherwise.
+set tclFile ./configReader.tcl
+if { [file exists $tclFile] != 1 } {
+   puts "Wish: File $tclFile Not present...exiting....."
+   exit
+} 
+source $tclFile
+################################################################
+###  When Above Line Finishes we have all data of Config     ###
+### in HashArrays.  					     ###	
+##			TK Starts Here. 		     ### 
+################################################################
+## Main Window Details Here 				      ##
+################################################################
+wm title . " FSPF Event Post Man."
+wm geometry . +0+0
+wm minsize . 800 375
+wm maxsize . 800 375
+
+## Declare and Initialize variables needed.
+array name labelNames
+set lIndex 1
+foreach i { SourceDomain SourcePort Source_IP DestDomain Dest_Port Dest_IP } {
+    set labelNames($lIndex) $i ;  incr lIndex ;
+}
+array name buttonNames
+set bIndex 1
+foreach i { DomainAssigned DomainInvalid PortUp PortDown EportUp EportDown Snapshot
+   	    RtReqNumEntries RtTable GetRoute PortUpMask BrdcastPortMask Quit } {
+    set buttonNames($bIndex) $i
+    incr bIndex
+}
+set b1Frame .b1Frame.
+set b2Frame .b2Frame.
+
+##############################################################  
+##  This Function is used to Create Forms
+## Input : frmName  -> Name of the frame to Create
+##         frmOpts  -> options for Frame.
+##         padyVal  -> Optional Pady value for packing.
+## Output : A Frame created.
+##############################################################
+proc evaluateTkFrameCommand { frmName { frmOpts } { padyVal 0m }}  { 
+   eval frame $frmName -width [lindex $frmOpts 0] -height [lindex $frmOpts 1]
+   pack $frmName -side [lindex $frmOpts 2] -pady $padyVal
+}
+
+################################################################  
+##   This Function is used to Create buttons.
+## Input : buttonName -> command name of button to create
+##	   eventName  -> button for which event
+##	   cmdAction  -> which function to call upon click
+##         btnOpts    -> options for the button in known order.
+##         pakBtnOpts -> Options for packing.
+## Output: A Button Created and Placed in Widget. 
+################################################################
+proc evaluateTkButtonCommand \
+     { buttonName eventName cmdAction { btnOpts } { pakBtnOpts } } {
+
+    eval button $buttonName -text $eventName \
+           -background [lindex $btnOpts 0] \
+	   -font -Adobe-Times-Bold-R-Normal--*-[lindex $btnOpts 1]-* \
+	   -command \"$cmdAction $eventName\" \
+	   -activebackground [lindex $btnOpts 2] \
+	   -borderwidth [lindex $btnOpts 3] 	
+    pack $buttonName -side [lindex $pakBtnOpts 0] -expand [lindex $pakBtnOpts 1]
+}
+
+##################################################################  
+##   This Function is used to Create Labels.
+##  Input : labelName  -> Name of the label to create
+##	    labelText  -> Text to display on the label
+##	    lblOpts    -> Options for creating label
+##	    pakLblOpts -> Options for packing label
+##  Output: A Label is created and placed in Widget.
+##################################################################
+proc evaluateTkLabelCommand { labelName lableText {lblOpts}  {pakOtps} } {
+     eval label $labelName -text \"$lableText\" -pady [lindex $lblOpts 0] \
+  	   -width [lindex $lblOpts 1] -height [lindex $lblOpts 2] \
+	   -foreground [lindex $lblOpts 3] -relief [lindex $lblOpts 4] \
+	   -font -Adobe-Helvetica-Bold-R-Normal--*-[lindex $lblOpts 5]-* \
+	   -justify [lindex $lblOpts 6]
+     pack $labelName -side [lindex $pakOtps 0] -padx [lindex $pakOtps 1] \
+ 	      -pady [lindex $pakOtps 2] 
+     if { [string compare $lableText "SourceDomain" ] == 0 }  {
+	bind .lFrame.sDomain <Button-1> "putDomainInfoInText"
+     }	
+}
+
+#################################################################### 
+##   This Function is used to Create Entry Box.
+##  Input : entName  -> Name of the Entry Box
+##          entryVar -> Variable to store entry value. 
+##	    entOpts  -> Options for Creating Entry box.
+##	    pakOpts  -> Options for packing the Entry box.
+##  Output: An Entry Box Label is created and placed in Widget.
+####################################################################
+proc evaluateTkEntryCommand { entName entryVar {entOpts} {pakOpts} } {
+   
+   eval entry $entName -relief [lindex $entOpts 0] -width [lindex $entOpts 1] \
+		-textvariable $entryVar -state [lindex $entOpts 2] \
+		-font -Adobe-Times-Bold-R-Normal--*-[lindex $entOpts 3]-0 \
+		-justify [lindex $entOpts 4] \
+	        -foreground [lindex $entOpts 5]
+   pack $entName -side [lindex $pakOpts 0] -padx [lindex $pakOpts 1]
+}
+
+#############################################################################    
+##   Create All the Frames Needed in One Shot
+## Input : Nothing
+## Output: Frames are created in the Window.
+#############################################################################
+proc createFrames { } {
+    foreach i { { hFrame 4m } { lFrame 1m } { tFrame 2m } { sFrame 2m } \
+		{ b1Frame 4m } { b2Frame 2m } { gFrame 2m } }  {
+           evaluateTkFrameCommand .[lindex $i 0] { 200 80 top } [lindex $i 1]  
+    }
+}
+
+###############################################################################
+##   Create all the Buttons in one Shot
+## Input : Nothing
+## Output: Buttons are Created in the Widget.
+###############################################################################
+proc createButtons { } {
+  global array buttonNames
+  set bIndex 1
+  ## This Loop puts FIRST line of buttons in the main window
+  foreach b1tn { domAssign domInvalid portUp portDown ePortUp ePortDown states } {
+      evaluateTkButtonCommand .b1Frame.$b1tn $buttonNames($bIndex) \
+	  sendEventInfoToTransporter { lightblue 170 pink 1m } { left 1 } 
+      incr bIndex
+  }
+  ## This Loop puts SECOND line of buttons in the main window
+  foreach b2tn { rtEntries rtTable getRoute portUpMask bcastPortMask quitManager } {
+      if { [string compare $b2tn "quitManager"] == 0  } {
+ 	   evaluateTkButtonCommand .b2Frame.$b2tn $buttonNames($bIndex) event_$b2tn \
+  		{ pink 170 pink 1m } { left 1 }
+      } else {
+         evaluateTkButtonCommand .b2Frame.$b2tn $buttonNames($bIndex) \
+	     sendEventInfoToTransporter { lightblue 170 pink 1m } { left 1 }
+      }
+      incr bIndex
+  }
+}
+
+
+########################################################
+##    Create Editable Fields. 
+## Input : None
+## Output: SourceDomain, SourcePort ListBoxs With labels 
+##         and Scroll Bars are created.
+########################################################
+proc createReadWriteFields { } {
+   global array labelNames
+   set lIndex 1
+   foreach lbl { sDomain sPort } {
+      if { $lIndex == 1 } { 
+	  # Clicking on this label pops-up a new window
+	  # With all information about the selected source domain     
+	  evaluateTkLabelCommand .lFrame.$lbl $labelNames($lIndex) \
+	     { 2m 14 1 darkblue raised 150 right } { left 1m 0m }
+      } else {
+	  evaluateTkLabelCommand .lFrame.$lbl $labelNames($lIndex) \
+	     { 2m 14 1 darkblue flat 150 right } { left 1m 0m }
+	  # Initialize sDomain ListBox, 
+	  # NOTE: this is kept here so that when control comes here 
+	  #     the sDomain field with scroll bars is formed.
+	  foreach dom [lsort -integer [getAllDomains]] {.lFrame.listsDomain insert end $dom}
+      }
+    listbox  .lFrame.list$lbl -listvariable var$lbl \
+		  -yscrollcommand "updateDisplayFrom$lbl;[list .lFrame.scroll$lbl set]"  \
+		  -height 1 -width 10 -font -Adobe-Helvetica-Bold-R-Normal--*-150-*	
+    scrollbar .lFrame.scroll$lbl -command [list .lFrame.list$lbl yview] 
+    pack .lFrame.list$lbl .lFrame.scroll$lbl -side left -padx 1m
+    incr lIndex
+  }
+}
+
+########################################################
+##    Create Read Only Fields. 
+## Input : None
+## Output: SourceIp, Destination Domain/Ports/Ip Fields 
+##        with labels are created.
+## NOTE : These fields are READ ONLY, They are changed 
+##        automatically whenever the source information
+##        ( domain id or port id) is changed.
+########################################################
+proc createReadOnlyFields { } {
+  global array labelNames
+  set lIndex 3	
+  foreach lbl2 { srcIP dDomain dPort destIP } {	
+     if { $lIndex == 3 } {
+         evaluateTkLabelCommand .lFrame.$lbl2 $labelNames($lIndex) \
+            {2m 11 2 maroon flat 140 right} {left 2m 0m}
+         evaluateTkEntryCommand .lFrame.ent$lbl2 varsrcIP \
+ 	    { ridge 15 disabled 160 center black } { left 0m }
+	 incr lIndex
+	 continue
+     }
+     evaluateTkLabelCommand .tFrame.$lbl2 $labelNames($lIndex) \
+        {2m 11 2 maroon flat 140 right} {left 2m 0m}
+     if { $lIndex == 6 } {
+         evaluateTkEntryCommand .tFrame.ent$lbl2 var$lbl2 \
+	   { ridge 15 disabled 160 center black } { left 0m }
+     } else {
+         evaluateTkEntryCommand .tFrame.ent$lbl2 var$lbl2 \
+	    { ridge 8 disabled 160 center black } { left 0m } 
+     }
+     incr lIndex
+  }
+}
+#########################  END OF Widget Creation Functions  ######################
+
+######################################################################
+##	Master Blaster Function Handling all Events !! ;-) 
+##  Input  : Event
+##  Output : Event Sent to sDomain.
+##	Extracts the sDomain And sPort From List Box.
+##	Updates Other Fields, Exec's Manager with Required Arguments.	
+##      Displays A message box with Information about current Event 
+## 		being sent.( This Box Grabs focus untill u press OK )
+## NOTE :- if Event is "quitManager" then EventManager is Closed.
+#######################################################################
+proc sendEventInfoToTransporter { Event } {
+    global varsDomain varsPort varsrcIP vardDomain vardPort vardestIP 
+    global sDomain sPort logFileId ExecFile b1Frame b2Frame textVar
+    ## Disable All Buttons till Finished...
+    foreach Button1 { domAssign domInvalid portUp portDown ePortUp ePortDown states } {	
+        $b1Frame$Button1 configure -state disable 
+    }
+    foreach Button2 { rtEntries rtTable getRoute portUpMask bcastPortMask quitManager} {
+   	$b2Frame$Button2 configure -state disable 
+    }
+    ## Get Current index..
+    set curIndex [.lFrame.listsDomain nearest 1]
+    ## Get this index's element (srcDomain) from $varsDomain List...
+    set sDomain [lindex $varsDomain $curIndex]
+    ## Process And Update The Text Field Variables
+    set curIndex [.lFrame.listsPort nearest 1]
+    set sPort [lindex $varsPort $curIndex]
+    set varsrcIP [getIpWithDomId $sDomain]	
+    switch $Event {
+	PortUp     -
+	PortDown   -
+	EportUp    -
+	GetRoute   -
+	EportDown  {
+  	         set dPair [getdPairWithsPair $sDomain:$sPort]
+   	         set dDdP  [split $dPair ":"]
+  	         set dDom  [lindex $dDdP 0]
+		 set dPort [lindex $dDdP 1]		
+		 set textVar "  Sending event $Event to domains ==> \
+			       $sDomain (Port: $sPort)  and  $dDom (Port: $dPort)...Wait"
+#		 exec $ExecFile Event$Event $sDomain $varsrcIP $sPort $vardDomain \
+				$vardestIP $vardPort
+ 		 set textVar "  $Event event is sent to domains ==> \
+			       $sDomain (Port: $sPort)  and  $dDom (Port: $dPort)"
+		 set SysTime [clock seconds ]
+		 # Put the Event in logFile.
+		 puts $logFileId \
+		      [ format "%-15s |%8s| %-15s => %-20s| DestInfo(d,ip,p) => %18s" \
+		      $Event [clock format $SysTime -format %H:%M:%S]  \
+		      "SrcInfo(d,ip,p)" \
+                      "($sDomain,$varsrcIP,$sPort)"  \
+                      "($vardDomain,$vardestIP,$vardPort)" ]
+ 	           updateDestFieldsInformation $dDom [getIpWithDomId $dDom] $dPort
+		 }
+	DomainAssigned - 
+        Snapshot         -
+	DomainInvalid  -
+        RtReqNumEntries -
+	RtTable -
+	PortUpMask -
+	BrdcastPortMask  {
+		  ## If Event is DomainAssigned, Then Extract corresponding Source Ports
+		  if { [string compare "$Event" "DomainAssigned" ] == 0 } {
+		      ## Got Domain Assigned Put Corresponding Source Ports
+		      set CurrentSrcPorts [llength $varsPort]
+		      .lFrame.listsPort delete 0 $CurrentSrcPorts
+		      ## get the Source Ports and insert in the sPort List
+		      foreach port [ getSportsForDomain $sDomain ] {
+		           .lFrame.listsPort insert end $port
+		      }
+		  }
+		  set textVar "Sending event $Event to domain ==> $sDomain (IP: $varsrcIP)...Wait" 
+#		  exec $ExecFile Event$Event $sDomain $varsrcIP $sPort
+		  set textVar " $Event  event is sent to domain ==> $sDomain (IP: $varsrcIP)" 
+		  set SysTime [clock seconds ]
+		  # Put the Event in logFile.
+		  puts $logFileId \
+		      [ format "%-15s |%8s| %-15s => %-20s " \
+		      $Event [clock format $SysTime -format %H:%M:%S]  \
+  	              "SrcInfo(d,ip)" \
+		      "($sDomain,$varsrcIP)" ] 
+	 	  } 
+   }   
+   # End of Switch 
+   ## Execution finished, So Enable All Buttons Again...
+   foreach Button1 { domAssign domInvalid portUp portDown ePortUp ePortDown states } {	
+         $b1Frame$Button1 configure -state normal
+   }
+   foreach Button2 { rtEntries rtTable getRoute portUpMask bcastPortMask quitManager} {
+  	 $b2Frame$Button2 configure -state normal  
+   }
+}
+
+##################################################################
+##   This function updates values displayed whenever a 
+##  sourceDomainList Item is selected.	
+## Input  : Nothing 
+## OutPut : sPorts Corresponding to the SourceDomain are updated
+##	   in the Source Port List Box
+##################################################################
+proc updateDisplayFromsDomain { } {
+    global varsDomain varsPort varsrcIP vardDomain vardestIP vardPort textVar
+    set textVar ""
+    ## Get Current index..
+    set curIndex [.lFrame.listsDomain nearest 1]
+    ## Get this index's element (srcDomain) from $varsDomain List...
+    set sDomain [lindex $varsDomain $curIndex]
+    set varsrcIP [getIpWithDomId $sDomain]	
+    ## Got Domain Assigned Put Corresponding Source Ports
+    set CurrentSrcPorts [llength $varsPort]
+    .lFrame.listsPort delete 0 $CurrentSrcPorts
+    ## get the Source Ports and insert in the sPort List
+    foreach port [getSportsForDomain $sDomain] {
+     	.lFrame.listsPort insert end $port
+    }
+}
+
+################################################################
+##   This function updates the values displayed whenever a  
+##  sourcePortList item is selected.
+## Input  : Nothing 
+## OutPut : Destination's  Inoformation is updated.
+################################################################
+proc updateDisplayFromsPort { } {
+    global varsDomain varsPort vardDomain vardestIP vardPort sDomain textVar
+    if { [regexp {Domain} $textVar] != 1 } { set textVar "" }
+    ## Get Current index..
+    set curIndex [.lFrame.listsDomain nearest 1]
+    ## Get this index's element (srcDomain) from $varsDomain List...
+    set sDomain [lindex $varsDomain $curIndex]
+    ## Process And Update The Text Field Variables
+    set curIndex [.lFrame.listsPort nearest 1]
+    set sPort [lindex $varsPort $curIndex]
+    set dPair [getdPairWithsPair $sDomain:$sPort]
+    set dDdP  [split $dPair ":"]
+    set dDom  [lindex $dDdP 0]
+    set dPort [lindex $dDdP 1]
+    updateDestFieldsInformation $dDom [getIpWithDomId $dDom] $dPort
+}
+
+###################################################################
+##  	When the ScrollBars associated with domain and sport Lists
+##    are used this function is called to update the destination 
+##    information in the Widget.
+## Input  : destDomain, destIP, destPort
+## OutPut : The Destination information fields in the Widget are
+##	   updated with these new values.
+###################################################################
+proc updateDestFieldsInformation { destDomain destIP  destPort } {
+   global vardDomain vardestIP vardPort 
+   set vardDomain $destDomain
+   set vardestIP  $destIP
+   set vardPort  $destPort
+}
+
+#################################################################
+##  	When the Label SourceDomain is Clicked this Opens a Text
+##     widget with all information about the corrsponding domain
+##     selected in the ListBox
+## Input  : N
+## OutPut : Wipes-Out Destination information from Widget.
+#################################################################
+proc putDomainInfoInText { } {
+    global sDomain textWindow textVar
+    if { [string compare "$textWindow" ".txtinfo"] != 1 } {
+		destroy .txtinfo
+    }
+    set textVar "Source Domain's Information Displayed!"
+    set textWindow [toplevel .txtinfo -borderwidth 25 -height 25 ]
+    wm geometry .txtinfo +275+60
+    #Create and pack a text widget and a scrollbar to go with it.
+    text .txtinfo.txt -relief sunken -borderwidth 2 -height 10 \
+                  -yscrollcommand ".txtinfo.s set" -bg white \
+		  -font -Adobe-Helvetica-Bold-R-Normal--*-150-* -width 45 
+    scrollbar .txtinfo.s -command ".txtinfo.txt yview" 
+    pack .txtinfo.txt .txtinfo.s -side left -fill y
+    set sIP    [getIpWithDomId $sDomain]
+    set sPorts [getSportsForDomain $sDomain ]
+    set count [llength $sPorts]
+    .txtinfo.txt insert end "\n## Domain: $sDomain  With  IP: $sIP Information ##\n"  
+    .txtinfo.txt configure -fg black 
+    .txtinfo.txt insert end \
+	[format "%7s : %7s : %9s : %15s" "SrcPort" "DstPort" "DstDomain" "DestIP\n"] 
+    for {set i 0} { $i < $count } {incr i} {
+	set sPort [lindex $sPorts $i]
+	set dPair [getdPairWithsPair $sDomain:$sPort]
+	set dPairArray [split $dPair ":"]
+	set dDom  [lindex $dPairArray 0]
+	set dPort [lindex $dPairArray 1]
+	set dIP   [getIpWithDomId $dDom]		
+    	# Insert the line into the text widget.
+    	.txtinfo.txt insert end \
+             [format "%-12d : %-12d : %-18d : %-15s  \n" $sPort $dPort $dDom $dIP]
+    }
+    .txtinfo.txt configure -state disabled
+}
+#################################################################
+##  This function Closes the Event Manager
+## Input  : event
+## OutPut : Close the Program
+#################################################################
+proc event_quitManager { Event } {
+   global logFileId	
+   set SysTime [clock seconds ]
+   puts $logFileId  [ format "%-15s |%8s| " \
+                     $Event [clock format $SysTime -format %H:%M:%S] ] 
+   close $logFileId
+   destroy .
+}
+######################## END OF ACTIONs FUNCTIONS ##########################
+
+###########################################################
+##     CALL THE FUNCTIONS FOR CREATING TK Widget.        ##
+###########################################################
+createFrames;
+createReadWriteFields; 
+createReadOnlyFields;
+createButtons;
+focus .b1Frame.domAssign; # Set "DomainAssigned" button as Defaultly HighLighted.
+## Create Status Text variable.
+evaluateTkEntryCommand .sFrame.lblstat textVar \
+   { ridge 75 disabled 160 left seagreen } { left 0m }
+## Put Header in the Widget.
+evaluateTkLabelCommand .hFrame.lblTitle "Event Simulator for FSPF Agent(s)" \
+   { 0m 40 1 black flat 300 right } { top 10m 2m }
+## Put Footer in the Widget.
+evaluateTkLabelCommand .gFrame.lblgesl "Global Edge Software Limited." \
+   { 0m 40 1 darkgreen flat 120 right } { top 2m 0m }
+
+###############   END OF FILE   ##########################

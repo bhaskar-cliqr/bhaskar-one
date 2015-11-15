@@ -1,0 +1,30 @@
+###############################################################################
+#### 		    Display Function Code.				   ####
+####      This Function Displays all the records in the Tabular form	   ####
+####      Using 'awk'.							   ####
+####									   ####
+###############################################################################			         
+	Num=`cat DispFile | wc -l`      # Total Records to Display.
+        clear		       	        # Clear the Screen			
+        if [ $Num -ne 0 ]               # Check if Records are there??
+        then
+  	   i=1
+           echo -ne '\E[40;033m'" ************************   The Sorted Records    **************************"  
+           echo -ne '\E[40;032m'"\n| Num |             Name           |     DOB     | SSLC |  PUC |  BE  | Avg |"
+            
+           echo -ne '\E[40;033m'"\n|-----|----------------------------|-------------|------|------|------|-----|\n"
+           echo -ne '\E[40;035m'
+              while [ $i -le $Num ]     #   Display all the Records
+              do  
+           awk  -F":" ' NR == '$i',NR == '$i' { printf "| %03d \|  %-25s \| %02d:%02d:%-5d \|%5d \|%5d \|%5d \|%4d \|\n",$1,$2,$3,$4,$5,$6,$7,$8,$9 }' DispFile              
+                (( i = $i + 1 ))
+             done
+        else
+            echo -ne '\E[47;034m'"\n\n\n\t\t No Records in DataBase....\n\n"
+        fi     
+   echo -ne '\E[40;033m'"|-----|----------------------------|-------------|------|------|------|-----|"
+if [ -f DispFile ];
+then
+  rm -f DispFile  
+fi      # Remove the Temporary File
+read           			  # Wait, So that User See's The Output. 

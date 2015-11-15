@@ -1,0 +1,177 @@
+#!/bin/bash
+###############################################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#    Function Add Which is to add Record to Database
+#  	         Read the Details
+#           	 Find the Average  
+#           	 Add  the Record to Database
+################################################################################
+# ----------------------------------------------------------------------------#
+# 		 Validate Function Validates the input data.  	              #
+# 	Fallowing 14 lines are for validating DD,mm,yyyy,puc,sslc,be 	      #
+# ----------------------------------------------------------------------------#
+Validate()
+{
+    	CurVal=0
+        while [ $CurVal -ne 1 ]
+        do 
+            case $Temp in 
+		[0-9]*);;
+		     *) Temp=0;;
+	    esac
+#	    if [ -z $Temp ]                     #  If Nothing is Entered???
+#            then
+#                Temp=0
+#            fi 
+#
+                if [ $Temp -gt $LLimit -a $Temp -le $ULimit ]  
+		then				# Check Range???
+                      CurVal=1
+       	              let "xpos = $xpos + 1"    # Increment Xpos for next input
+		      return                    # Input is Valid, So return.
+		else         
+	        	tput cup $xpos $ypos     
+	                tput el                  # Clear the Line till end
+        	        tput cup $xpos $ypos     # Place the curser back there.
+		   	read Temp                # Read Again.
+                fi  
+       done
+}      
+#  End Of Validate function
+
+#  Function to Read the Input Values
+ReadVals()
+{  
+        echo -e '\E[40;036m'"                   Number :"
+        Found=1;
+        while [ "$Found" -ne 0 ]
+        do
+           tput cup $xpos $ypos
+           tput el
+           tput cup $xpos $ypos
+           read Temp
+           LLimit=0
+           ULimit=18    
+           Validate;
+           Found=`grep \^$Temp: $DIR/.DATABASE | wc -l `
+           xpos=`expr $xpos - 1`;
+        done           
+
+        num=$Temp   
+                 xpos=`expr $xpos + 1`                
+       		 echo -ne '\E[40;036m'"                     Name :"       
+          	 tput cup $xpos $ypos  
+		 name=""                            # Read The Name
+                 while [ -z $name ]
+                 do
+                       tput cup $xpos $ypos
+                       read name
+                 done        
+                  
+# Fallowing 8 lines are for validating the Day of birth
+        	xpos=`expr $xpos + 1`
+        echo -ne '\E[40;036m'"         Date Of Birth DD :"       
+	        tput cup $xpos $ypos
+	   	read Temp                            # Read Day of birth
+                LLimit=0
+                ULimit=31 
+                Validate;
+                DD=$Temp
+
+# Fallowing 6 lines are for validating the Month  of birth
+        echo -ne '\E[40;036m'"                       MM :`tput cup $xpos $ypos`"
+	   	read Temp                            # Read Month of birth 
+                LLimit=0
+                ULimit=12           
+                Validate;
+                mm=$Temp
+        
+# Fallowing 7 lines are for validating the Year of birth
+        echo -ne '\E[40;036m'"	             YYYY :"
+	        tput cup $xpos $ypos
+	   	read Temp                            # Read Month of birth
+                LLimit=1970
+                ULimit=1981
+                Validate;
+                yyyy=$Temp    
+
+# Fallowing 7 lines are for validating SSLC Marks
+        echo -ne '\E[40;036m'"                     SSLC :"           
+	        tput cup $xpos $ypos
+	   	read Temp                            # Read SSLC Marks  
+                LLimit=34
+                ULimit=100
+                Validate;
+                sslc=$Temp      
+  
+# Fallowing 5 lines are for validating PUC Marks
+	echo -ne '\E[40;036m'"                      PUC :"
+	        tput cup $xpos $ypos
+	   	read Temp                            # Read PUC Marks  
+	        Validate;
+                puc=$Temp  
+
+# Fallowing 4 lines are for validating BE Marks
+	echo -ne '\E[40;036m'"                       BE :`tput cup $xpos $ypos`"
+	   	read Temp                            # Read BE Marks  
+		Validate;
+                be=$Temp
+ 
+# Calculating the Average of SSLC,PUC,BE.
+
+        let " sum = $sslc + $puc + $be"       # Calculate the Sum.
+        avg=`expr $sum / 3`	              # Average.
+        yrs=`expr 2001 - $yyyy`
+        (( mnts = 12 - $mm )) 
+        ds=`expr 31 - $DD`
+        days=`expr $yrs \* 365 + $mnts \* 31 + $ds`   # Total Days From Birth.
+                                                      # For Sorting on DOB  
+}
+
+#  Function that Puts the Values to DATABASE;
+PutVals()
+{ 
+  echo "$num:$name:$DD:$mm:$yyyy:$sslc:$puc:$be:$avg:$days" >> $DIR/.DATABASE;
+}
+ 
+Status=`echo  $NSTATUS`        # NSTATUS is set by mYDB.sh
+
+clear
+  if [ $Status -eq 1 ]
+  then     
+       
+       xpos=3; ypos=10; 
+       tput cup $xpos $ypos
+       echo -e '\E[40;031m'"Enter the Name to Change : "   
+       tput cup $xpos 38
+       read Cname
+
+       grep "$Cname" $DIR/.DATABASE > Temp
+       Found=`cat Temp | wc -l`
+       if [ $Found -eq 0 ]
+       then
+            echo -ne '\E[41;040m' " No < $Cname > Record in DATABASE "
+            read; 
+            return;
+       else     
+                echo
+		echo -e '\E[40;033m'" ******     Old Values     *****"   
+                awk  -F":" ' NR==1,NR==1 { printf "Num  : %d\nName : %s\nDOB  : %2d:%2d:%4d\nSSLC : %d\nPUC  : %d\nBE   : %d",$1,$2,$3,$4,$5,$6,$7,$8,$9 }' Temp 
+		echo -ne '\E[40;032m'"\n\t ******* Enter New Values ******* \n"
+		xpos=13                      # Starting X Position
+		ypos=28	 	             # Starting Y Position
+                ReadVals;
+                grep -v "$Cname" $DIR/.DATABASE > Temp;
+                cat Temp > $DIR/.DATABASE;        # $DIR
+                rm -f Temp
+                PutVals;        
+       fi
+  else
+      num=`cat $DIR/.DATABASE | wc -l`        # Getting Total Records present.  
+      echo -ne "\t Total Records = $num\n\n"  
+      echo -ne "\t Enter the Details\n"
+      xpos=3;ypos=28;
+      ReadVals;
+      PutVals;
+  fi
+

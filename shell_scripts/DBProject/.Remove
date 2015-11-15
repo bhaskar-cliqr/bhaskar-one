@@ -1,0 +1,27 @@
+###############################################################################
+#### 	   This Function Removes the Given Record if it is there in DB     ####
+####	       Removal is done using grep -v Opton 			   ####
+####									   ####
+###############################################################################
+
+clear
+tput cup 10 12
+echo "Enter Name To Remove : "
+tput cup 10 34
+read Name
+
+trap " " 2			# Trap the 'Control - C'
+
+Val=`awk  -F: ' $2 == "'$Name'" { print NR } ' $DIR/.DATABASE | wc -l` 
+if [ ! -z $Val ]  	     	# Is 'Name' in Database???
+then
+     #sed -n "${Val}!p" $DIR > Temp	# $DIR is set in mYDB.sh
+     grep -wv "$Name" $DIR/.DATABASE > Temp;
+     cat Temp > $DIR/.DATABASE
+     rm -f Temp
+trap 2                   	# Finished Removing Enable interrupt. 
+else
+    echo -ne '\E[47;031m'"\n\n\n\t NO < $Name > in the DATABASE\n"
+    read
+    tput sgr0
+fi    

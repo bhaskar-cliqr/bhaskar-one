@@ -1,0 +1,373 @@
+
+README                     fspfEventPostMan For Linux                03:08:2003
+                          Global Edge Software Limited.
+--------------------------------------------------------------------------------
+
+   FspfEventPostMan  -  Event Simulator && Transporter for Fspf Agent(s). 
+
+*** WHAT IS FspfEventPostMan ???
+    
+		 FspfEventPostMan is a set of Event Simulator (GUI) and Event 
+     Transporter (C Binary)to generate the events and post them to FspfAgent(s) 
+     running on Linux System(s). It Offers flexibility of testing a wide range 
+     of events faster and easier. TESTER need not worry about the port 
+     connections or how agent is receiving events. All she needs to do is to 
+     copy a Config.cfg ( or write one ) to this directory and start the 
+     Agents (With Their DomainId Passed as Command Line Argument) and then
+     start the FspfEventSimulator. After that its all Mouse Clicks.;-)
+
+*** FEATURES IN GUI  :-	
+        
+        1. GUI need not be on the same system in which the fspfAgent(s)
+	  are running.And a Single instance of GUI is enough to Post 
+	  events to any of the fspfAgents.
+
+        2. No Entry Fields. Just Select Source Domain And/Or
+          Source Port, Rest of the fields are updated automatically.
+
+        3. An "eventLogs" file Generated when you Quit GUI. Which
+          contains summary of all the EVENTS you sent in this session. 
+          A backup of previous event log file (prevEventLogs) is provided 
+          to help hasty USER.
+    
+        4. TESTER can test for some time then close the GUI. After
+          sometime, may be days ;-), restart GUI again and start
+          from where she left.
+            
+        5. No Key Board Typos. Does not need any Extra information 
+          apart from Config.cfg File. Only Mouse clicks. 
+    
+        6. The eventTransporter is executed (run & exited) when USER selects an event.
+          othertimes its not running. No Idle Process.           
+    
+        7.  A SourceDomain Label, which can be clicked to see all the
+           information about a Domain Selected in the corresponding
+           listbox.        
+        
+        8. A Status information is Displayed on the screen to show the
+           current action.
+
+        9. State tramsitions of a particular Eport can be seen by clicking 
+          the Snapshot button.
+
+	       
+*** EVENTS THAT CAN BE SENT FROM GUI :-
+        
+        PortUp           => Sent to BOTH fspfAgents (i.e, with sDomain and dDomain). *
+        PortDown         =>            "
+        EportUp          =>            "
+        EportDown        =>            "
+        DomainAssigned   => Sent ONLY to fspfAgent with DomainId sDomain. **
+        Snapshot         =>	       "	 
+        DomainInvalid    =>            "  
+        RtReqNumEntries  =>            "    
+        RtTable          =>            "
+        GetRoute         =>            "
+        PortUpMask       =>            "
+        BrdcastPortMask  =>            "
+        Quit             => To close the GUI.
+
+    
+     IMPORTANT NOTE:
+
+         * Before sending PortUp/Down or EportUp/Down make sure that you sent 
+      DomainAssigned to corresponding (source domain & destn domain) fspfAgents 
+      SEPARATELY (since it is sent ONLY to Source Domain fspfAgent by default. 
+      Well, in Real Switch domain assigned is individual event to that switch only,
+      Right!), unless you are doing some kind of Negative testing like what happens 
+      if one swith receives PortUp but other switch to which it is connected is not
+      yet ready(though it is unlikely to happen in real scenario).
+
+        ** Once PortUP, EportUp are sent then corresponding fspfAgents will start
+      getting timeout events from its own MBOX, and packets from OTHER fspfAgent(s),
+      as they start communicating with each other (without EventPostMan's intervention).
+      Especially when EportUp is sent the agents will exchange TDB etc and after a while 
+      comes to a Stable state. Hence when other EVENTS ( GetRoute etc) are sent some 
+      time AFTER sending PortUp & EportUP, before user could actually see the output of
+      that EVENT at fspfAgent terminal and ANALYSE, other timer events may occcur or
+      packets may be received from other fspfAgent(s) causing the output to SCROLL OFF.      
+      fiddle with Scroll Bar. ;-)
+    
+        *** By DEFAULT, The GUI fills up the fields that are Displayed, with SourceDomain 
+     as least domain (in Config.cfg file) and SourcePort as least port in 'this' source 
+     domain. Based on these two fields other fields are filled. When other source domain
+     is selected, Then source port is updated as to contain the least port on this newly 
+     selected domain. Then other fields are updated accordingly. Afcourse one can select 
+     other port (if exists) from the sourcePortList too.Then other fields are updated to 
+     reflect this newly selected source port. 
+
+       **** The Fields Source_Ip, DestDomain, Dest_Port, Dest_IP are 'SEEONLY'. User can 
+     not change them directly. Afcourse you can change indirectly by selecting New Source 
+     Domain or Source Port.
+	
+      ***** Though GUI can handle as many events as USER clicks, its advised to give some
+     delay between each of the events. This is because GUI sends events to eventTransporter 
+     which then sends to transport layer of corresponding fspfagent, which then posts it to 
+     agent's MBOX. Only after these activities the fspfagent will receive the actual EVENT 
+     sent. 
+				
+		      EventSelection
+  		  ( Fspf Event Post Man )
+				|
+ 				|
+		  Event Transporter	     ( Post Man's transport layer )
+                        | 
+				|
+           Transport Layer at Test-Harness   ( fspfagent's transport layer )
+                        |
+				|
+                 fspfagent's MailBOX 	      
+				|
+    				|
+	  	        fspfagent		     ( fc2Read reads the event )
+				|	
+				|
+ 		   ( event processing... )    
+
+      Especially give some delay ( >= 2 sec ) while giving portUp/Down EportUp/Down EVENTs.
+
+
+*** PACKAGE CONTENTS :- 5 Files ( Atleast )
+
+#######*****************************************************************#    
+
+    File   : README
+    Type   : ASCII text
+    Desc   : This File Provides the Description about the Package.
+
+#######*****************************************************************#    
+
+    File   :  Config.cfg ( for a Sample 3 Switch Connection )
+    Type   :  ASCII text
+    Desc   :  This File is the config file for whole Network.
+
+#######*****************************************************************#
+
+        File   :  configReader.tcl
+        Type   :  Tcl Script.
+        Desc   :  It is a Tcl Script Which reads Config file info. and stores
+		the config info. into HASHES.
+
+#######*****************************************************************#
+
+        File   :  fspfEventSimulator.tk
+        Type   :  Tk Script
+        Desc   :  It is a Tk Script Which Displays the Widget
+             with buttons, text bixes, and list boxes. Buttons will
+             correspond to the Events for the FSPF Agent.
+             Events are choosen by pressing corresponding buttons.
+             ( it sources configReader.tcl before starting widget ).
+
+#######*****************************************************************#    
+
+        File   :  eventTransporter.c
+        Type   :  C Program
+        Desc   :  This is a Source File for the Event Transporter.
+             This gets all the required information from command line
+             arguments ( passed from GUI ) and opens a socket 
+	       ( baseaddress + domainId ) to the given source domain 
+             ( the same socket on which corresponding Domain's fspfAgent 
+   	       is listening) and Posts her the Event 
+             and It's Information ( If Event is Port UP/DOWN or
+             EPort UP/DOWN then sends to destination Domain also ) 
+             then exits.
+             
+#######**********************************************************##########    
+
+
+      NOTE   :- No need of any config files at fspfAgents directory. But
+               you need to start the fspfAgents with their domainId passed as 
+               command line arguments, before Using EventSimulator GUI. 
+
+      Example:- Starting an fspfAgent with domainId 2 in testHarness directory.
+               ( this domainId 2 should be present in Config.cfg and the system 
+               in which you are starting this fspfAgent should have Ip Address
+               as specified for this domain(2) in the Config.cfg ).
+
+               (PromptString)$ ./fspfAgent 2     
+         
+
+*** HOW TO EDIT CONFIG FILE ??? ( Manually )
+
+     The Information into Config file is to be entered as folows :
+     
+        sourceDomain: sourceIP: destDomain sourcePort destPort;destDomain sourcePort destPort;
+
+        Explanation:- 
+    Next two values are  Once/Domain :-
+        sourceDomain :- Source Domain Id
+        sourceIP     :- Source IP Address
+
+    Next three values are a pair. One_Entry/Port_Connection.
+        destDomain   :- Destination Domain
+        sourcePort   :- Source Port
+        destPort     :- destPort
+
+    ***EXAMPLE FOR WRITING CONFIG FILE :- 
+    
+        Suppose you want to Connect....
+
+    FROM a switch with
+
+        domainId 1, IpAddress 172.16.2.16, SourcePort 2 
+
+    TO a switch with
+
+        domainId 2, IpAddress 172.16.2.178, DestnPort 3 
+
+    THEN corresponding entries in the Config file should be
+
+    1:172.16.2.16:2 2 3;
+    2:172.16.2.178:1 3 2;
+
+    Now u want to make one more connection, Suppose
+    FROM
+
+        domainId 1, IpAddress 172.16.2.16, SourcePort 4
+
+    TO
+
+        domainId 2, IpAddress 172.16.2.178, DestnPort 5
+
+    THEN the updated Config file should look like
+
+    1:172.16.2.16:2 2 3;2 4 5;
+    2:172.16.2.178:1 3 2;1 5 4;
+    
+    Similarly add more connections. ;-)
+
+#####    IMPORTANT ==>
+
+         1.     IpAddress of Source and Destination can be same, to support
+        Multiple instances on same system.
+
+         2.  Source Port and Destination Port can be same, provided Source Domain 
+        and Destination Domain are different. i,e) You can connect from Source 
+        Port 2 to Destination Port 2.
+
+         3.  DONT use different delimeters and newlines. Use what is 
+         explained above. Its strictly one line/domain. If line 
+         exceeds more than one line DON'T use <ENTER> use '\' instead.
+
+         4.  No validations are being done on the numbers ( from Config.cfg). 
+        This is to allow the TESTER luxury of NEGATIVE Testing of FSPF Agents.
+
+         5. Make sure that IP Addresses given for Domains are reachable from
+        FspfEventPostMan.( use 'ping IP_ADDRESS' and check ).
+    
+         6. Make sure that you have latest transport layer ( compatible with GUI )
+        at the fspfAgent's side (in testHarness directory).         
+             
+                
+    
+*** INSTALLATION STEPS : ( FspfEventPostMan only. )
+        
+        1. Go to FspfEventPostMan Directory.
+        
+            cd FspfEventPostMan
+        
+        2. Make FspfEventSimulator.tk Executable    
+            
+            chmod 0777 FspfEventSimulator.tk
+        
+        3. Run FspfEventSimulator.tk
+
+            ./FspfEventSimulator.tk
+
+         
+        If You are running it for the first time, it takes few seconds
+    before you see the GUI ( Graphical User Interface ), because it 
+    builds the Binary "EventTransporter" from source "EventTransporter.c"
+    first time.
+
+        When USER Quits From the GUI she will find a file named "eventLogs" which
+    gives the summary of Events she has sent during this session.     
+    
+
+*** USING eventTransporter Without GUI :
+	
+	Incase Tester wants to test the fspfAgents without using the GUI, she can do so by
+      following steps.
+	
+	1. Check for executable "eventTransporter" in fspfEventPostMan directory.
+
+      2. If it is not there then check if eventTransporter.c is there. make an executable 
+           'eventTransporter' from 'eventTransporter.c' by, ( assuming u have a 'C' compiler 
+           installed. Otherwise call sysadmin).          
+
+           cc -o eventTransporter eventTransporter.c
+         
+	3. Now,
+           one can send events using the 'eventTransporter' executable created in step 2 
+           by following the syntax given below.
+
+        For Sending Events 
+		PortUp, 
+		PortDown, 
+		EportUp, 
+		EportDown, 
+		GetRoute
+
+        Use the Syntax :
+          eventTransporter EventEVENTNAME SourceDomain SourceIpAddress SourcePort \
+			   DestDomain DestIpAddress DestPort
+
+        and    
+        For Sending Events 
+		DomainAssigned, 
+	        Snapshot,
+	        DomainInvalid,  
+	        RtReqNumEntries, 
+	        RtTable, 
+	        PortUpMask, 
+	        BrdcastPortMask
+
+       Use The Syntax :    
+	 eventTransporter EventEVENTNAME SourceDomain SourceIpAddress SourcePort
+
+
+       EXAMPLE :
+	
+	=>  Suppose u want to send 'PortUp' to sourceDomain '1' with Ip '172.16.2.187' and 
+           sourcePort '10' and to destDomain '2' with Ip '172.16.2.192' and destPort '11'
+           then at command-line execute the command, (Make sure that domaiIds are Unique)
+          
+          eventTransporter EventPortUp 1 172.16.2.187 10 2 172.16.2.192 11
+
+        =>  Suppose u want to send 'DomainAssigned' to sourceDomain '1' with Ip '172.16.2.187'
+	   with sourcePort '10' then execute the command,
+	 
+	  eventTransporter EventDomainAssigned 1 172.16.2.187 10
+
+        NOTE :-
+
+	    1. All the Above said rules under the section Important in  
+              "HOW TO EDIT A CONFIG FILE" MUST be followed here also.
+
+	    2. User herself has to keep track of the events she sent. No diagnostic information
+              is displayed by the trasporter, it just sends Event ( if values are correct, and
+              it is able to reach that domain) and Quits.
+
+	    3. A Shell or PERL script can be Used to do Automation.
+
+	    4. User is Adviced to use GUI always, so that she knows for sure what she is doing.
+              
+          5. If the Configuration is complex, i.e, there are many domains and many ports 
+              connected between them, then some basic configuration can be automated using 
+	      Scripts ( she can log the events too, by some coding ) and then GUI can be 
+              started to TEST from that BASE point.
+
+*** Future Enhancements:
+
+	     1.  An Option to run the GUI in silent mode with config.cfg details and at the 
+		  end of all events start the GUI or exit.
+
+	     2. Minor Adjustments to make it run on WindowsXp.
+	
+*** MAIL YOUR SUGGESTIONS AND BUGS TO :
+
+    rram@globaledgesoft.com
+    suneel@globaledgesoft.com
+    bhaskarv@globaledgesoft.com
+    rajshekar@globaledgesoft.com
+

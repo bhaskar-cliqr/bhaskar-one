@@ -1,0 +1,36 @@
+#!/bin/bash
+##############################################################################
+####       This Function Sorts the Records in the Order choosen by user   ####
+####	      'sort' Command with '-t' Option is used			  #### 
+####									  ####
+############################################################################## 
+#  Sorting Starts Here
+	clear     
+	echo -e '\E[47;033m'"\n\n\nSort (Display) By :\n1. SSLC  2.PUC  3.BE  4.Avg. Of All  5.DOB  6.Name"
+        tput cup 5 0 
+        Option="" 
+	echo -e '\E[40;036m'"\tEnter Your Choice : "
+        while [ -z "$Option" ]
+        do
+		tput cup 5 28
+                tput el
+                tput cup 5 28
+ 		read Option         		  # Read the Option
+        done
+        tput reset
+        
+case $Option in    
+  1)  sort -t \: +5 /$DIR/.DATABASE > DispFile # Sort By SSLC Marks
+        ;; 
+  2)  sort -t \: +6 /$DIR/.DATABASE > DispFile  # Sort by PUC Marks
+         ;;
+  3)  sort -t \: +7 /$DIR/.DATABASE > DispFile  # Sort by BE Marks
+         ;;
+  4)  sort -t \: +8 /$DIR/.DATABASE > DispFile  # Sort by Average  
+         ;;
+  5)  sort -t \: +9 /$DIR/.DATABASE > DispFile  # Sort by DOB
+         ;;
+  6)  sort -t \: +1 /$DIR/.DATABASE > DispFile  # Sort By Name 
+         ;;
+esac                             # End Of Switch 
+# End Of Sort
